@@ -1,0 +1,33 @@
+<svg width="1200" height="860" viewBox="0 0 1200 860" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="860" rx="56" fill="#0B2945"/>
+  <rect x="0" y="0" width="1200" height="86" rx="56" fill="#203C59"/>
+  <rect x="0" y="40" width="1200" height="46" fill="#203C59"/>
+  <circle cx="70" cy="43" r="12" fill="#FF5F57"/>
+  <circle cx="110" cy="43" r="12" fill="#FEBB2E"/>
+  <circle cx="150" cy="43" r="12" fill="#28C840"/>
+  <rect x="864" y="170" width="248" height="132" rx="26" fill="#284866"/>
+  <rect x="900" y="198" width="116" height="40" rx="20" fill="#165E89"/>
+  <text x="932" y="224" fill="#23B7FF" font-size="28" font-family="Inter, Arial, sans-serif" font-weight="700">Technical</text>
+  <text x="1048" y="225" fill="#A9BDD1" font-size="34" font-family="Inter, Arial, sans-serif" font-weight="700">Q1</text>
+  <rect x="864" y="336" width="248" height="132" rx="26" fill="#284866"/>
+  <rect x="900" y="364" width="134" height="40" rx="20" fill="#155A55"/>
+  <text x="925" y="390" fill="#33D3B2" font-size="28" font-family="Inter, Arial, sans-serif" font-weight="700">Leadership</text>
+  <text x="1048" y="391" fill="#A9BDD1" font-size="34" font-family="Inter, Arial, sans-serif" font-weight="700">Q2</text>
+  <rect x="864" y="502" width="248" height="132" rx="26" fill="#284866"/>
+  <rect x="900" y="530" width="128" height="40" rx="20" fill="#5E5932"/>
+  <text x="930" y="556" fill="#FFB324" font-size="28" font-family="Inter, Arial, sans-serif" font-weight="700">Soft Skills</text>
+  <text x="1048" y="557" fill="#A9BDD1" font-size="34" font-family="Inter, Arial, sans-serif" font-weight="700">Q3</text>
+  <rect x="108" y="150" width="652" height="576" rx="30" fill="#08243E"/>
+  <rect x="760" y="150" width="2" height="576" fill="#2C4967"/>
+  <circle cx="420" cy="420" r="92" fill="#0E3E62"/>
+  <circle cx="420" cy="398" r="22" stroke="#74C2E8" stroke-width="8"/>
+  <path d="M381 475C381 448.49 402.49 427 429 427H411C437.51 427 459 448.49 459 475V490H381V475Z" stroke="#74C2E8" stroke-width="8" stroke-linejoin="round"/>
+  <text x="302" y="566" fill="white" font-size="54" font-family="Inter, Arial, sans-serif" font-weight="800">Sarah Johnson</text>
+  <text x="318" y="622" fill="#47C4FF" font-size="40" font-family="Inter, Arial, sans-serif" font-weight="500">Senior Developer</text>
+  <rect x="156" y="668" width="180" height="40" rx="20" fill="#123B5C"/>
+  <text x="192" y="694" fill="#7FCBF1" font-size="24" font-family="Inter, Arial, sans-serif" font-weight="700">React • Node</text>
+  <rect x="350" y="668" width="188" height="40" rx="20" fill="#123B5C"/>
+  <text x="392" y="694" fill="#7FCBF1" font-size="24" font-family="Inter, Arial, sans-serif" font-weight="700">System Design</text>
+  <rect x="552" y="668" width="140" height="40" rx="20" fill="#123B5C"/>
+  <text x="596" y="694" fill="#7FCBF1" font-size="24" font-family="Inter, Arial, sans-serif" font-weight="700">WebRTC</text>
+</svg>

@@ -1,0 +1,364 @@
+.showcase {
+  width: min(100%, 548px);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-left: auto;
+}
+
+.surface {
+  position: relative;
+  overflow: hidden;
+  border-radius: 34px;
+  padding: 20px 20px 16px;
+  background:
+    radial-gradient(circle at top right, rgba(56, 189, 248, 0.16), transparent 34%),
+    linear-gradient(180deg, #f8fbff 0%, #eef5fb 100%);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow:
+    0 26px 60px rgba(15, 23, 42, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+.surfaceGlow {
+  position: absolute;
+  inset: auto -50px -60px auto;
+  width: 180px;
+  height: 180px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(0, 163, 224, 0.16), rgba(0, 163, 224, 0));
+  pointer-events: none;
+}
+
+.surfaceHeader {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+  padding: 0 4px;
+}
+
+.chromeDots {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.chromeDot {
+  width: 11px;
+  height: 11px;
+  border-radius: 999px;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.35);
+}
+
+.chromeRed {
+  background: #ff6b5f;
+}
+
+.chromeAmber {
+  background: #ffbd44;
+}
+
+.chromeGreen {
+  background: #00c853;
+}
+
+.surfaceMeta {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.surfacePill,
+.surfacePillMuted {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.surfacePill {
+  color: #0369a1;
+  background: rgba(14, 165, 233, 0.12);
+  border: 1px solid rgba(14, 165, 233, 0.14);
+}
+
+.surfacePillMuted {
+  color: #475569;
+  background: rgba(255, 255, 255, 0.76);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+/* ===== STACKING ANIMATION ===== */
+.crossfadeStack {
+  position: relative;
+  min-height: 348px;
+  border-radius: 26px;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(28, 64, 102, 0.96) 0%, rgba(10, 37, 64, 0.98) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.crossfadeSlide {
+  position: absolute;
+  inset: 0;
+  border-radius: 26px;
+  overflow: hidden;
+  will-change: opacity, transform, visibility;
+  backface-visibility: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.crossfadeHidden {
+  opacity: 0;
+  visibility: hidden;
+  z-index: 0;
+  transform: translateY(0) scale(1) translateZ(0);
+  transition:
+    opacity 800ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 800ms cubic-bezier(0.16, 1, 0.3, 1),
+    visibility 800ms;
+}
+
+.crossfadeVisible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1) translateZ(0);
+  z-index: 2;
+  transition:
+    opacity 800ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 800ms cubic-bezier(0.16, 1, 0.3, 1),
+    visibility 0s;
+}
+
+.crossfadeOut {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-40px) scale(1.05) translateZ(0);
+  z-index: 3;
+  transition:
+    opacity 800ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 800ms cubic-bezier(0.16, 1, 0.3, 1),
+    visibility 800ms; /* delays hidden until opacity reaches 0 */
+}
+
+.crossfadeIn {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1) translateZ(0);
+  z-index: 1;
+  animation: stackComeForward 800ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes stackComeForward {
+  from {
+    opacity: 1; /* Stay opaque so there is no black flash */
+    transform: translateY(30px) scale(0.92) translateZ(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1) translateZ(0);
+  }
+}
+
+
+
+.slideImage {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  border-radius: inherit;
+  transform: translateZ(0);
+  user-select: none;
+}
+
+/* Clickable partner slide link */
+.slideLink {
+  display: block;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  text-decoration: none;
+  cursor: pointer;
+  border-radius: inherit;
+}
+
+.slideLinkOverlay {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 999px;
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+  z-index: 3;
+}
+
+.slideLink:hover .slideLinkOverlay {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.captionBar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 0 6px 0 8px;
+  height: 160px;
+}
+
+.captionCopy {
+  max-width: 420px;
+}
+
+.captionBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(0, 163, 224, 0.12);
+  color: #0284c7;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.captionTitle {
+  margin: 0;
+  color: #0a2540;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.captionSubtitle {
+  margin: 10px 0 0;
+  color: #64748b;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.dots {
+  display: inline-flex;
+  gap: 10px;
+  padding-bottom: 6px;
+}
+
+.dot,
+.dotActive {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease, opacity 0.2s ease;
+}
+
+.dot {
+  background: rgba(100, 116, 139, 0.28);
+}
+
+.dot:hover {
+  transform: scale(1.08);
+  background: rgba(2, 132, 199, 0.45);
+}
+
+.dotActive {
+  background: linear-gradient(135deg, #00a3e0 0%, #0a2540 100%);
+  box-shadow: 0 10px 18px rgba(0, 163, 224, 0.22);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crossfadeVisible,
+  .crossfadeOut {
+    transition: opacity 220ms ease-out;
+  }
+
+  .crossfadeIn {
+    animation-duration: 220ms;
+  }
+
+  .dot,
+  .dotActive {
+    transition: background 0.2s ease;
+  }
+}
+
+@media (max-width: 900px) {
+  .showcase {
+    width: min(100%, 500px);
+  }
+
+  .surface {
+    padding: 18px 18px 14px;
+  }
+
+  .crossfadeStack {
+    min-height: 320px;
+  }
+
+  .captionBar {
+    padding-left: 6px;
+  }
+}
+
+@media (max-width: 640px) {
+  .surface {
+    border-radius: 26px;
+    padding: 14px 14px 12px;
+  }
+
+  .surfaceHeader {
+    margin-bottom: 10px;
+  }
+
+  .crossfadeStack {
+    min-height: 270px;
+    border-radius: 20px;
+  }
+
+  .crossfadeSlide {
+    border-radius: 20px;
+  }
+
+  .captionBar {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0 2px 0 2px;
+  }
+
+  .captionTitle {
+    font-size: 18px;
+  }
+
+  .captionSubtitle {
+    font-size: 13px;
+  }
+}

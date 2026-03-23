@@ -1,0 +1,837 @@
+/* ===== CANDIDATE INTERVIEW ROOM ===== */
+
+.interviewPage {
+    height: 100vh;
+    overflow: hidden;
+    background: #0A192F;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ===== TOP BAR ===== */
+.topBar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 24px;
+    background: rgba(10, 25, 47, 0.95);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    z-index: 10;
+}
+
+.topLeft {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.liveBadge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 6px;
+    padding: 6px 12px;
+    color: #10B981;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.liveDot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #10B981;
+    animation: dotPulse 1.5s infinite;
+}
+
+.interviewLabel {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.topCenter {
+    display: flex;
+    align-items: center;
+}
+
+.interviewTimer {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 7px 16px;
+    color: #FFFFFF;
+    font-size: 13px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.topRight {
+    display: flex;
+    align-items: center;
+}
+
+.recIndicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    border-radius: 6px;
+    padding: 6px 12px;
+    color: #EF4444;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.recDot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #EF4444;
+    animation: dotPulse 1.2s infinite;
+}
+
+@keyframes dotPulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.3;
+    }
+}
+
+/* ===== LIVE ROOM WRAPPER: grid + controls column ===== */
+/* Ensures the controls bar is always visible below the video grid */
+.liveRoomWrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* ===== MAIN LAYOUT ===== */
+.mainLayout {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    min-height: 0;
+    overflow: hidden;
+}
+
+
+/* ===== VIDEO SECTION (2/3) ===== */
+.videoSection {
+    position: relative;
+    background: #060E1A;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+}
+
+.videoFeed {
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    object-fit: cover;
+    display: block;
+    transform: scaleX(-1);
+}
+
+.videoNameTag {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    border-radius: 8px;
+    padding: 8px 14px;
+    color: #FFFFFF;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* Mic indicator */
+.micIndicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.5);
+    transition: all 0.2s;
+}
+
+.micActive {
+    background: rgba(16, 185, 129, 0.25);
+    color: #10B981;
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+    animation: micGlow 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes micGlow {
+    0% {
+        box-shadow: 0 0 6px rgba(16, 185, 129, 0.3);
+    }
+
+    100% {
+        box-shadow: 0 0 18px rgba(16, 185, 129, 0.6);
+    }
+}
+
+/* ===== AI SPEAKING POPUP ===== */
+.aiPopup {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(10, 25, 47, 0.85);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(0, 163, 224, 0.3);
+    border-radius: 12px;
+    padding: 12px 18px;
+    box-shadow: 0 0 24px rgba(0, 163, 224, 0.15);
+    animation: popupIn 0.3s ease-out;
+}
+
+@keyframes popupIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.aiPopupIcon {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(0, 163, 224, 0.1);
+    border: 1px solid rgba(0, 163, 224, 0.3);
+}
+
+.aiWave {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 163, 224, 0.25);
+    animation: waveExpand 1.8s ease-out infinite;
+}
+
+.aiWave:nth-child(2) {
+    animation-delay: 0.4s;
+}
+
+.aiWave:nth-child(3) {
+    animation-delay: 0.8s;
+}
+
+@keyframes waveExpand {
+    0% {
+        transform: scale(1);
+        opacity: 0.6;
+    }
+
+    100% {
+        transform: scale(1.8);
+        opacity: 0;
+    }
+}
+
+.aiPopupText {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.aiPopupLabel {
+    color: #FFFFFF;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.aiPopupStatus {
+    color: #00A3E0;
+    font-size: 11px;
+    font-weight: 500;
+    animation: textPulse 1.5s infinite;
+}
+
+@keyframes textPulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* ===== QUESTION PANEL (1/3) ===== */
+.questionPanel {
+    background: #FFFFFF;
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid #E8EDF2;
+}
+
+.qpHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid #F0F2F5;
+}
+
+.qpHeaderLeft {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.qpTitle {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0A2540;
+}
+
+.qpProgress {
+    font-size: 12px;
+    font-weight: 600;
+    color: #7C8DB0;
+}
+
+.qpBody {
+    flex: 1;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+}
+
+/* Question Card */
+.qCard {
+    background: #F8FAFC;
+    border: 1px solid #E8EDF2;
+    border-radius: 12px;
+    padding: 18px;
+}
+
+.qCardTop {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.qCategory {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: #E0F2FE;
+    color: #0284C7;
+}
+
+.qCategory[data-cat="Leadership"] {
+    background: #ECFDF5;
+    color: #059669;
+}
+
+.qCategory[data-cat="Problem Solving"] {
+    background: #FFF7ED;
+    color: #EA580C;
+}
+
+.qNumber {
+    font-size: 12px;
+    font-weight: 700;
+    color: #94A3B8;
+}
+
+.qText {
+    font-size: 14px;
+    color: #1F2937;
+    line-height: 1.65;
+    margin: 0;
+}
+
+/* Answer Area */
+.answerArea {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.answerLabel {
+    font-size: 12px;
+    font-weight: 600;
+    color: #6B7280;
+}
+
+.answerInput {
+    width: 100%;
+    min-height: 100px;
+    border: 1px solid #D1D5DB;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: #1F2937;
+    resize: vertical;
+    outline: none;
+    font-family: 'Inter', sans-serif;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+}
+
+.answerInput:focus {
+    border-color: #00A3E0;
+    box-shadow: 0 0 0 3px rgba(0, 163, 224, 0.1);
+}
+
+.answerInput::placeholder {
+    color: #9CA3AF;
+}
+
+/* Submit Button */
+.submitBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: #00A3E0;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Inter', sans-serif;
+}
+
+.submitBtn:hover {
+    background: #0090C7;
+    transform: translateY(-1px);
+}
+
+.submitBtn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Question Timer */
+.qTimerArea {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.qTimerBar {
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    background: #E8EDF2;
+    overflow: hidden;
+}
+
+.qTimerFill {
+    height: 100%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, #00A3E0, #4DC9F6);
+    transition: width 1s linear;
+}
+
+.qTimerText {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #7C8DB0;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Footer */
+.qpFooter {
+    padding: 14px 20px;
+    border-top: 1px solid #F0F2F5;
+    display: flex;
+    justify-content: center;
+}
+
+.endBtn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 24px;
+    border-radius: 10px;
+    border: none;
+    background: #EF4444;
+    color: #FFFFFF;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Inter', sans-serif;
+}
+
+.endBtn:hover {
+    background: #DC2626;
+}
+
+/* ===== FINISHED SCREEN ===== */
+.finishedScreen {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 40px;
+}
+
+.finishedIcon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(16, 185, 129, 0.1);
+    border: 2px solid rgba(16, 185, 129, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+}
+
+.finishedTitle {
+    color: #FFFFFF;
+    font-size: 28px;
+    font-weight: 800;
+    margin: 0;
+}
+
+.finishedText {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 15px;
+    max-width: 400px;
+    text-align: center;
+    line-height: 1.6;
+    margin: 0;
+}
+
+.finishedTime {
+    color: #00A3E0;
+    font-size: 14px;
+    font-weight: 600;
+    margin: 8px 0 0 0;
+}
+
+.finishedBtn {
+    margin-top: 16px;
+    padding: 12px 32px;
+    background: #00A3E0;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Inter', sans-serif;
+}
+
+.finishedBtn:hover {
+    background: #0090C7;
+    transform: translateY(-1px);
+}
+
+/* ===== AI INFO BANNER ===== */
+.aiBannerOverlay {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    padding: 24px;
+}
+
+.aiBannerCard {
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    padding: 48px 40px;
+    max-width: 520px;
+    width: 100%;
+    text-align: center;
+    animation: bannerFadeIn 0.4s ease;
+}
+
+@keyframes bannerFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.aiBannerIcon {
+    margin-bottom: 16px;
+}
+
+.aiBannerTitle {
+    font-size: 28px;
+    font-weight: 800;
+    color: #FFFFFF;
+    margin: 0 0 8px;
+}
+
+.aiBannerSubtitle {
+    font-size: 15px;
+    color: rgba(255, 255, 255, 0.6);
+    margin: 0 0 28px;
+    line-height: 1.5;
+}
+
+.aiBannerList {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 32px;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.aiBannerList li {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.aiBannerList li svg {
+    flex-shrink: 0;
+}
+
+.aiBannerBtn {
+    width: 100%;
+    padding: 14px 24px;
+    background: linear-gradient(135deg, #00A3E0 0%, #0A2540 100%);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: opacity 0.2s, transform 0.15s;
+    font-family: 'Inter', sans-serif;
+}
+
+.aiBannerBtn:hover {
+    opacity: 0.92;
+    transform: translateY(-1px);
+}
+
+/* ===== Live Interview PiP & Overlay ===== */
+.pipContainer {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 200px;
+    height: 150px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 2px solid rgba(255, 255, 255, 0.6);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    z-index: 10;
+    background: #0A2540;
+}
+
+.pipVideo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1);
+}
+
+.pipLabel {
+    position: absolute;
+    bottom: 6px;
+    left: 8px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(10, 37, 64, 0.7);
+    backdrop-filter: blur(6px);
+    color: #FFFFFF;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-family: 'Inter', sans-serif;
+}
+
+.liveConnecting {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: rgba(10, 37, 64, 0.85);
+    backdrop-filter: blur(8px);
+    z-index: 5;
+    animation: fadeInLive 0.4s ease;
+}
+
+.liveConnecting p {
+    color: #CBD5E1;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: 'Inter', sans-serif;
+}
+
+@keyframes fadeInLive {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* ===== NO-MIRROR: remote video in live room ===== */
+/* The local (self) video is mirrored via .videoFeed transform: scaleX(-1).
+   The remote feed should display naturally — no mirror. */
+.noMirror {
+    transform: scaleX(1) !important;
+}
+
+/* ===== MEDIA CONTROLS BAR ===== */
+.controlsBar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 14px 24px;
+    background: rgba(10, 25, 47, 0.92);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    flex-shrink: 0;
+}
+
+.ctrlBtn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    min-width: 72px;
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ctrlBtn:hover {
+    background: rgba(255, 255, 255, 0.14);
+    transform: translateY(-1px);
+}
+
+/* Active state — mic on / camera on */
+.ctrlBtnActive {
+    background: rgba(16, 185, 129, 0.12);
+    color: #10B981;
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+.ctrlBtnActive:hover {
+    background: rgba(16, 185, 129, 0.2);
+}
+
+/* Muted / Off state */
+.ctrlBtnMuted {
+    background: rgba(239, 68, 68, 0.12);
+    color: #EF4444;
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.ctrlBtnMuted:hover {
+    background: rgba(239, 68, 68, 0.2);
+}
+
+/* Screen sharing active */
+.ctrlBtnSharing {
+    background: rgba(99, 102, 241, 0.15);
+    color: #818CF8;
+    border-color: rgba(99, 102, 241, 0.35);
+}
+
+.ctrlBtnSharing:hover {
+    background: rgba(99, 102, 241, 0.25);
+}
+
+/* End Interview — always red */
+.ctrlBtnDanger {
+    background: rgba(239, 68, 68, 0.15);
+    color: #EF4444;
+    border-color: rgba(239, 68, 68, 0.35);
+}
+
+.ctrlBtnDanger:hover {
+    background: #EF4444;
+    color: #FFFFFF;
+    border-color: #EF4444;
+}

@@ -1,0 +1,34 @@
+<svg width="1200" height="860" viewBox="0 0 1200 860" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="860" rx="56" fill="#0A2640"/>
+  <rect width="1200" height="86" rx="56" fill="#1D3955"/>
+  <rect x="0" y="40" width="1200" height="46" fill="#1D3955"/>
+  <circle cx="70" cy="43" r="12" fill="#FF5F57"/>
+  <circle cx="110" cy="43" r="12" fill="#FEBB2E"/>
+  <circle cx="150" cy="43" r="12" fill="#28C840"/>
+  <rect x="118" y="150" width="710" height="572" rx="32" fill="#092038"/>
+  <rect x="864" y="150" width="218" height="572" rx="28" fill="#14324E"/>
+  <circle cx="468" cy="392" r="114" fill="#113C61"/>
+  <circle cx="468" cy="362" r="24" stroke="#74C2E8" stroke-width="8"/>
+  <path d="M421 460C421 428.52 446.52 403 478 403H458C489.48 403 515 428.52 515 460V478H421V460Z" stroke="#74C2E8" stroke-width="8" stroke-linejoin="round"/>
+  <text x="324" y="564" fill="white" font-size="54" font-family="Inter, Arial, sans-serif" font-weight="800">Aiden Chen</text>
+  <text x="334" y="620" fill="#4AC8FF" font-size="40" font-family="Inter, Arial, sans-serif" font-weight="500">ML Engineer</text>
+  <rect x="308" y="654" width="314" height="44" rx="22" fill="#123551"/>
+  <text x="354" y="683" fill="#9BDFFF" font-size="24" font-family="Inter, Arial, sans-serif" font-weight="700">Real-time confidence tracking</text>
+  <rect x="896" y="198" width="154" height="42" rx="21" fill="#0E5173"/>
+  <text x="939" y="226" fill="#27B6FF" font-size="26" font-family="Inter, Arial, sans-serif" font-weight="700">AI Notes</text>
+  <rect x="896" y="278" width="154" height="104" rx="24" fill="#1D4E68"/>
+  <text x="928" y="320" fill="#F8FBFF" font-size="26" font-family="Inter, Arial, sans-serif" font-weight="700">92%</text>
+  <text x="927" y="355" fill="#9CC0DA" font-size="24" font-family="Inter, Arial, sans-serif" font-weight="500">Role fit</text>
+  <rect x="896" y="410" width="154" height="104" rx="24" fill="#1F5B53"/>
+  <text x="924" y="452" fill="#ECFFF9" font-size="26" font-family="Inter, Arial, sans-serif" font-weight="700">Strong</text>
+  <text x="918" y="487" fill="#A5D7CC" font-size="24" font-family="Inter, Arial, sans-serif" font-weight="500">Clarity</text>
+  <rect x="896" y="542" width="154" height="128" rx="24" fill="#355774"/>
+  <text x="920" y="579" fill="#F8FBFF" font-size="24" font-family="Inter, Arial, sans-serif" font-weight="700">Signals</text>
+  <rect x="920" y="598" width="102" height="14" rx="7" fill="#22C1EE" fill-opacity="0.35"/>
+  <rect x="920" y="626" width="74" height="14" rx="7" fill="#34D399" fill-opacity="0.35"/>
+  <rect x="920" y="654" width="116" height="14" rx="7" fill="#F59E0B" fill-opacity="0.35"/>
+  <rect x="680" y="182" width="112" height="36" rx="18" fill="#1C496D"/>
+  <text x="711" y="206" fill="#66CFFF" font-size="22" font-family="Inter, Arial, sans-serif" font-weight="700">LIVE</text>
+  <rect x="160" y="184" width="210" height="34" rx="17" fill="#123A5A"/>
+  <text x="198" y="206" fill="#7DD3FC" font-size="22" font-family="Inter, Arial, sans-serif" font-weight="700">AI Interview Summary</text>
+</svg>

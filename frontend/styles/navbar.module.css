@@ -1,0 +1,641 @@
+/* ===== TOP BAR ===== */
+.topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    background: #0A2540;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.topbarLeft {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+}
+
+.logoArea {
+    flex-shrink: 0;
+    min-width: 0;
+}
+
+.logoIcon {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logoText {
+    display: flex;
+    flex-direction: column;
+}
+
+.companyName {
+    color: #FFFFFF;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.appName {
+    color: #00A3E0;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.3;
+}
+
+/* Top nav links - centered horizontally on the page */
+.topNav {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 28px;
+    align-items: center;
+}
+
+.topNavLink {
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.2s;
+    padding: 4px 0;
+    white-space: nowrap;
+}
+
+.topNavLink:hover {
+    color: #00A3E0;
+}
+
+.topNavLinkActive {
+    composes: topNavLink;
+    color: #00A3E0;
+}
+
+.topNavLinkActive:hover {
+    color: #00A3E0;
+}
+
+/* ===== TOP-RIGHT ICONS ===== */
+.topbarRight {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.iconBtn {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.iconBtn:hover {
+    background: rgba(0, 163, 224, 0.15);
+    color: #00A3E0;
+}
+
+.profileBtn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 20px;
+    border-radius: 8px;
+    border: none;
+    background: linear-gradient(90deg, #00A3E0 0%, #8ED6F4 100%);
+    color: #FFFFFF;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'Inter', sans-serif;
+    box-shadow: 0 2px 8px rgba(0, 163, 224, 0.3);
+}
+
+.profileBtn:hover {
+    background: linear-gradient(90deg, #00B4F0 0%, #A2EAF8 100%);
+    box-shadow: 0 4px 12px rgba(0, 163, 224, 0.4);
+}
+
+/* ===== NOTIFICATIONS PANEL ===== */
+.notifWrap {
+    position: relative;
+    display: inline-block;
+}
+
+.bellBadge {
+    position: absolute;
+    top: 1px;
+    right: 1px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    background: #EF4444;
+    border-radius: 9px;
+    border: 2px solid #0A2540;
+    color: #FFFFFF;
+    font-size: 10px;
+    font-weight: 700;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
+    animation: badgePulse 2s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+.notifPanel {
+    position: absolute;
+    top: calc(100% + 12px);
+    right: -60px;
+    width: 320px;
+    max-height: 400px;
+    background: #FFFFFF;
+    border-radius: 12px;
+    box-shadow: 0 10px 32px rgba(0, 0, 0, 0.15);
+    z-index: 1200;
+    font-family: 'Inter', sans-serif;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: fadeSlideDown 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeSlideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.notifHeader {
+    padding: 16px 20px;
+    border-bottom: 1px solid #F0F2F5;
+    background: #FAFAFB;
+}
+
+.notifTitle {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: #0A2540;
+}
+
+.notifBody {
+    padding: 12px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.notifEmpty {
+    text-align: center;
+    color: #9CA3AF;
+    font-size: 13px;
+    padding: 24px 0;
+    margin: 0;
+}
+
+.notifItem {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 8px;
+    background: #F0F7FB;
+    border-left: 3px solid #00A3E0;
+    transition: background 0.2s;
+}
+
+.notifItem:hover {
+    background: #E6F3FA;
+}
+
+.notifDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #00A3E0;
+    margin-top: 6px;
+    flex-shrink: 0;
+}
+
+.notifText {
+    margin: 0;
+    font-size: 13px;
+    color: #1F2937;
+    line-height: 1.4;
+    font-weight: 500;
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+    position: fixed;
+    top: 64px;
+    left: 0;
+    width: 240px;
+    height: calc(100vh - 64px);
+    background: #FFFFFF;
+    border-right: 1px solid #E8EDF2;
+    display: flex;
+    flex-direction: column;
+    z-index: 900;
+    overflow-y: auto;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.sidebarHeader {
+    padding: 20px 20px 12px;
+}
+
+.sidebarLabel {
+    font-size: 11px;
+    font-weight: 700;
+    color: #94A3B8;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.sidebarNav {
+    display: flex;
+    flex-direction: column;
+    padding: 30px 12px 0 12px;
+    gap: 2px;
+}
+
+/* Default sidebar link */
+.sidebarLink {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 16px;
+    border-radius: 10px;
+    color: #64748B;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    position: relative;
+    border: none;
+    background: transparent;
+}
+
+/* Hover state - light blue-gray background, NOT the active gradient */
+.sidebarLink:hover {
+    background: #F0F7FB;
+    color: #334155;
+}
+
+/* Active state - clean cyan gradient pill, no left border */
+.sidebarLinkActive {
+    composes: sidebarLink;
+    background: linear-gradient(135deg, #4DC9F6 0%, #00A3E0 100%);
+    color: #FFFFFF;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0, 163, 224, 0.25);
+}
+
+/* Active link should NOT change on hover */
+.sidebarLinkActive:hover {
+    background: linear-gradient(135deg, #4DC9F6 0%, #00A3E0 100%);
+    color: #FFFFFF;
+}
+
+.sidebarIcon {
+    display: flex;
+    align-items: center;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+.sidebarText {
+    white-space: nowrap;
+}
+
+/* ===== SIDEBAR FOOTER ===== */
+.sidebarFooter {
+    margin-top: auto;
+    padding: 16px;
+    border-top: 1px solid #E8EDF2;
+}
+
+.sidebarUserCard {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #0A2540, #1a3a5c);
+}
+
+.sidebarUserAvatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.sidebarUserInfo {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.sidebarUserName {
+    color: #FFFFFF;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.25;
+}
+
+.sidebarUserRole {
+    color: #7EC8E3;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+/* ===== PROFILE DROPDOWN PANEL ===== */
+.profileWrap {
+    position: relative;
+}
+
+.profilePanel {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 360px;
+    max-height: 80vh;
+    overflow-y: auto;
+    background: #FFFFFF;
+    border-radius: 14px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+    z-index: 1100;
+    font-family: 'Inter', sans-serif;
+}
+
+.ppHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid #F0F2F5;
+}
+
+.ppTitle {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0A2540;
+    margin: 0;
+}
+
+.ppClose {
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    color: #9CA3AF;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: background 0.15s;
+}
+
+.ppClose:hover {
+    background: #F3F4F6;
+    color: #374151;
+}
+
+.ppBody {
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.ppPhotoRow {
+    display: flex;
+    justify-content: center;
+}
+
+.ppPhotoWrap {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    overflow: hidden;
+    cursor: pointer;
+    position: relative;
+    border: 2px solid #E8EDF2;
+    transition: border-color 0.2s;
+}
+
+.ppPhotoWrap:hover {
+    border-color: #00A3E0;
+}
+
+.ppPhotoImg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.ppPhotoPlaceholder {
+    width: 100%;
+    height: 100%;
+    background: #F0F4F8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ppPhotoLabel {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.55);
+    color: #FFF;
+    font-size: 9px;
+    font-weight: 600;
+    text-align: center;
+    padding: 3px 0;
+}
+
+.ppField {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ppLabel {
+    font-size: 11px;
+    font-weight: 600;
+    color: #6B7280;
+}
+
+.ppInput {
+    padding: 9px 12px;
+    border: 1px solid #D1D5DB;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #1F2937;
+    outline: none;
+    font-family: 'Inter', sans-serif;
+    transition: border-color 0.2s;
+}
+
+.ppInput:focus {
+    border-color: #00A3E0;
+    box-shadow: 0 0 0 2px rgba(0, 163, 224, 0.1);
+}
+
+.ppInput::placeholder {
+    color: #9CA3AF;
+}
+
+.ppResumeRow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ppResumeBtn {
+    padding: 7px 16px;
+    background: transparent;
+    color: #00A3E0;
+    border: 1px solid #00A3E0;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: background 0.15s;
+}
+
+.ppResumeBtn:hover {
+    background: rgba(0, 163, 224, 0.05);
+}
+
+.ppResumeLink {
+    font-size: 12px;
+    color: #00A3E0;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.ppResumeLink:hover {
+    text-decoration: underline;
+}
+
+.ppSaveBtn {
+    padding: 10px;
+    background: #00A3E0;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: background 0.15s;
+}
+
+.ppSaveBtn:hover {
+    background: #0090C7;
+}
+
+.ppMsg {
+    font-size: 12px;
+    color: #059669;
+    font-weight: 500;
+    margin: 0;
+}
+
+.ppDivider {
+    height: 1px;
+    background: #F0F2F5;
+    margin: 0 20px;
+}
+
+.ppSignOut {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 14px 20px;
+    border: none;
+    background: transparent;
+    color: #EF4444;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: background 0.15s;
+    border-radius: 0 0 14px 14px;
+}
+
+.ppSignOut:hover {
+    background: #FEF2F2;
+}
+
+@media (max-width: 900px) {
+    .topbar {
+        padding: 0 16px;
+    }
+
+    .topbarRight {
+        gap: 8px;
+    }
+
+    .profileBtn {
+        padding: 8px 14px;
+    }
+}
+
+@media (max-width: 640px) {
+    .iconBtn {
+        width: 34px;
+        height: 34px;
+    }
+
+    .profileBtn {
+        padding: 8px 12px;
+    }
+
+    .sidebarUserCard {
+        align-items: flex-start;
+    }
+}
