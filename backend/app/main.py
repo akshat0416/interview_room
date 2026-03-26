@@ -2,8 +2,6 @@
 AI Interview Room - FastAPI Backend with Socket.IO
 """
 import os
-import uuid
-import json
 import socketio
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
@@ -59,12 +57,6 @@ app.include_router(report.router)
 @app.get("/api/interviews")
 def get_interviews():
     return db.get_all_interviews()
-
-
-@app.get("/api/test-cors")
-def test_cors():
-    return {"status": "ok"}
-
 
 
 
