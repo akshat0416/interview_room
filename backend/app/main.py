@@ -3,13 +3,18 @@ AI Interview Room - FastAPI Backend with Socket.IO
 """
 import os
 import socketio
+import httpx
+import base64
+import asyncio
+import io
+import time
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Optional, List
 
-from app.config import CORS_ORIGINS
+from app.config import CORS_ORIGINS, MODEL_SERVING_URL
 from app.routes import auth, questions, answers, report
 from app import database as db
 from app.email_service import send_interview_invitation_email
@@ -213,6 +218,18 @@ def update_admin(user_id: str = Form(...), new_name: str = Form(None),
     if "error" in result:
         return result
     return {"message": "Admin profile updated successfully", "user": result}
+
+@app.post("/api/users/update_password")
+def update_password(user_id: str = Form(...), old_password: str = Form(...), new_password: str = Form(...)):
+    """Update user password verifying old password"""
+    result = db.update_admin_credentials(
+        user_id=user_id,
+        old_password=old_password,
+        new_password=new_password
+    )
+    if "error" in result:
+        return result
+    return {"message": "Password updated successfully"}
 
 # ===== PROFILE ENDPOINTS =====
 
@@ -576,15 +593,93 @@ def get_stats():
     return db.get_stats()
 
 
+@app.get("/api/interviews/{interview_id}/proctoring_logs")
+def get_interview_proctoring_logs(interview_id: str):
+    return db.get_proctoring_logs(interview_id)
+
 @app.get("/")
 def root():
     return {"message": "AI Interview Room API", "status": "running"}
+
+
+# ===== AI MODEL PROXY ENDPOINT =====
+
+@app.post("/api/detect")
+async def detect_objects(file: UploadFile = File(...)):
+    """
+    Proxy endpoint: forwards image to the AI model-serving microservice
+    and returns detection results. Keeps model logic decoupled from backend.
+    """
+    image_bytes = await file.read()
+    if not image_bytes:
+        return {"error": "Uploaded file is empty"}
+
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                f"{MODEL_SERVING_URL}/detect",
+                files={"file": (file.filename, image_bytes, file.content_type or "image/jpeg")},
+            )
+        if response.status_code == 200:
+            return response.json()
+        else:
+            return {"error": f"Model serving returned {response.status_code}", "detail": response.text}
+    except httpx.ConnectError:
+        return {"error": "Model serving is not running. Start it on port 8002."}
+    except Exception as e:
+        return {"error": f"Failed to reach model serving: {str(e)}"}
 
 
 # --- Socket.IO Events ---
 
 # Track active rooms
 active_rooms: dict = {}
+
+# Session state for proctoring
+proctoring_sessions: dict = {}
+
+# Global dynamic proctoring configurations
+GLOBAL_SETTINGS = {
+    "phoneDetect": True,
+    "multiFaceDetect": True,
+    "noFaceDetect": True,
+    "warningLimit": 3,
+    "warningCooldown": 5.0,
+    "defaultDuration": 30,
+    "difficulty": "Medium",
+    "autoTerminate": True,
+    "enableLogs": False,
+    "showScores": False,
+    "showBoxes": False,
+    "sessionTimeout": 60
+}
+
+class SettingsUpdateBody(BaseModel):
+    phoneDetect: bool = True
+    multiFaceDetect: bool = True
+    noFaceDetect: bool = True
+    warningLimit: int = 3
+    warningCooldown: float = 5.0
+    defaultDuration: int = 30
+    difficulty: str = "Medium"
+    autoTerminate: bool = True
+    enableLogs: bool = False
+    showScores: bool = False
+    showBoxes: bool = False
+    sessionTimeout: int = 60
+
+@app.get("/api/settings")
+def get_settings():
+    return GLOBAL_SETTINGS
+
+@app.post("/api/settings")
+def update_settings(new_settings: SettingsUpdateBody):
+    global GLOBAL_SETTINGS
+    data = new_settings.dict()
+    for k, v in data.items():
+        if k in GLOBAL_SETTINGS:
+            GLOBAL_SETTINGS[k] = v
+    return {"message": "Settings updated", "settings": GLOBAL_SETTINGS}
 
 
 @sio.event
@@ -595,6 +690,8 @@ async def connect(sid, environ):
 @sio.event
 async def disconnect(sid):
     print(f"Client disconnected: {sid}")
+    if sid in proctoring_sessions:
+        del proctoring_sessions[sid]
     for room_id, room in list(active_rooms.items()):
         if sid in room.get("participants", []):
             room["participants"].remove(sid)
@@ -630,6 +727,16 @@ async def join_interview(sid, data):
         "role": role,
         "name": name,
     }, room=room_id, skip_sid=sid)
+
+    # Initialize proctoring session if candidate
+    if role == "candidate":
+        proctoring_sessions[sid] = {
+            "interview_id": room_id,
+            "warning_count": 0,
+            "last_warning_time": 0.0,
+            "session_active": True,
+            "tab_warned": False
+        }
 
 
 @sio.event
@@ -712,6 +819,138 @@ async def interview_progress(sid, data):
         "stage": stage,
         "progress": progress,
     }, room=room_id)
+
+
+async def _issue_proctor_warning(sid: str, violations_desc: str, increment: bool = True):
+    if sid not in proctoring_sessions:
+        # Should normally be handled in join_interview, but fallback just in case
+        return
+
+    session = proctoring_sessions[sid]
+    if not session["session_active"]:
+        return
+
+    interview_id = session.get("interview_id")
+    current_time = time.time()
+    cooldown = float(GLOBAL_SETTINGS["warningCooldown"])
+
+    # Log to DB regardless of cooldown (all incidents should be recorded)
+    if interview_id:
+        db.log_proctoring_violation(interview_id, "WARNING", violations_desc)
+
+    if current_time - session["last_warning_time"] < cooldown:
+        return
+
+    # Check both camelCase and snake_case for robustness
+    auto_terminate = GLOBAL_SETTINGS.get("autoTerminate")
+    if auto_terminate is None:
+        auto_terminate = GLOBAL_SETTINGS.get("auto_terminate", True)
+
+    if not auto_terminate:
+        # Update cooldown even for generic warnings to prevent spam
+        session["last_warning_time"] = current_time
+        # Informational only, no counting, generic message (no numbers)
+        await sio.emit("proctoring_event", {
+            "type": "WARNING",
+            "message": "Suspicious activity detected. Please follow the interview rules."
+        }, to=sid)
+        return
+
+    if not increment:
+        # Grace warning - just notify, don't increment count
+        await sio.emit("proctoring_event", {
+            "type": "WARNING",
+            "message": f"{violations_desc}. (First-time grace period)"
+        }, to=sid)
+        return
+
+    # Auto-terminate is ON, full counting system
+    session["warning_count"] += 1
+    session["last_warning_time"] = current_time
+    limit = int(GLOBAL_SETTINGS["warningLimit"])
+    
+    if session["warning_count"] >= limit:
+        session["session_active"] = False
+        if interview_id:
+            db.log_proctoring_violation(interview_id, "TERMINATE", "Interview auto-terminated due to limit.")
+        await sio.emit("proctoring_event", {
+            "type": "TERMINATE",
+            "message": "Interview terminated due to repeated violations."
+        }, to=sid)
+    else:
+        await sio.emit("proctoring_event", {
+            "type": "WARNING",
+            "message": f"{violations_desc}. Warning {session['warning_count']} of {limit}."
+        }, to=sid)
+
+
+async def _process_and_forward_frame(sid: str, frame_data: str):
+    """Background task to send frame to AI microservice without blocking the socket loop."""
+    try:
+        # Strip the data:image/jpeg;base64, header
+        if "," in frame_data:
+            frame_data = frame_data.split(",")[1]
+            
+        decompressed_data = base64.b64decode(frame_data)
+        
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.post(
+                f"{MODEL_SERVING_URL}/detect",
+                files={"file": ("frame.jpg", decompressed_data, "image/jpeg")},
+            )
+            
+        if response.status_code == 200:
+            results = response.json()
+            # Send results exclusively back to the candidate client that sent the frame
+            await sio.emit("ai_detection_result", results, to=sid)
+
+            # --- Proctoring Logic ---
+            if sid not in proctoring_sessions:
+                proctoring_sessions[sid] = {
+                    "warning_count": 0,
+                    "last_warning_time": 0.0,
+                    "session_active": True
+                }
+            
+            session = proctoring_sessions[sid]
+            if not session["session_active"]:
+                return
+            
+            flags = results.get("flags", [])
+            active_detections = set()
+            if GLOBAL_SETTINGS["phoneDetect"]: active_detections.add("PHONE_DETECTED")
+            if GLOBAL_SETTINGS["multiFaceDetect"]: active_detections.add("MULTIPLE_FACES")
+            if GLOBAL_SETTINGS["noFaceDetect"]: active_detections.add("NO_FACE")
+
+            detected_cheating = [f for f in flags if f in active_detections]
+            
+            if detected_cheating:
+                violations_str = "Suspicious activity detected (" + ", ".join(detected_cheating).replace("_", " ").title() + ")"
+                await _issue_proctor_warning(sid, violations_str)
+    except Exception as e:
+        print(f"[AI Proxy] Frame processing error: {e}")
+
+@sio.event
+async def video_frame(sid, data):
+    """Receive frame from frontend, process async, send AI results back."""
+    frame_data = data.get("frame_data")
+    if frame_data:
+        asyncio.create_task(_process_and_forward_frame(sid, frame_data))
+
+@sio.event
+async def tab_switched(sid):
+    """Triggered from frontend when candidate opens a new tab or minimizes browser."""
+    if sid not in proctoring_sessions:
+        return
+    
+    session = proctoring_sessions[sid]
+    if not session.get("tab_warned"):
+        session["tab_warned"] = True
+        # First time is a grace warning
+        await _issue_proctor_warning(sid, "Tab Change/Application Switch detected (Grace Warning)", increment=False)
+    else:
+        # Subsequent times count as real warnings
+        await _issue_proctor_warning(sid, "Tab Change/Application Switch detected", increment=True)
 
 
 # Wrap FastAPI with Socket.IO ASGI app

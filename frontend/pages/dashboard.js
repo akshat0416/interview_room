@@ -88,6 +88,14 @@ export default function Dashboard() {
 
   // Notifications state (candidate)
   const [notifications, setNotifications] = useState([]);
+  
+  // Proctoring details state
+  const [proctoringModalIv, setProctoringModalIv] = useState(null);
+  const [proctoringLogs, setProctoringLogs] = useState([]);
+  const [isFetchingLogs, setIsFetchingLogs] = useState(false);
+  
+  // Track seen pending counts locally for the admin group notifications
+  const [seenPendingCounts, setSeenPendingCounts] = useState({});
 
   // Empty state toast message 
   const [toastMsg, setToastMsg] = useState('');
@@ -106,6 +114,15 @@ export default function Dashboard() {
     }
     setRole(userRole || 'candidate');
     setUserId(uid || '');
+
+    if (uid) {
+      const storedCounts = localStorage.getItem(`seenPendingCounts_${uid}`);
+      if (storedCounts) {
+        try {
+          setSeenPendingCounts(JSON.parse(storedCounts));
+        } catch (e) {}
+      }
+    }
 
     const storedTab = localStorage.getItem('dashboardTab');
     if (storedTab) {
@@ -198,6 +215,20 @@ export default function Dashboard() {
         setProfileSkillsInput((res.data.skills || []).join(', '));
       }
     } catch (e) { }
+  };
+
+  const handleViewProctoringDetails = async (iv) => {
+    setProctoringModalIv(iv);
+    setIsFetchingLogs(true);
+    setProctoringLogs([]);
+    try {
+      const res = await interviewsAPI.getProctoringLogs(iv.id);
+      setProctoringLogs(res.data || []);
+    } catch (err) {
+      console.error('Failed to fetch proctoring logs:', err);
+      showToast('Failed to load proctoring details.');
+    }
+    setIsFetchingLogs(false);
   };
 
   const handlePageChange = (page) => {
@@ -457,7 +488,7 @@ export default function Dashboard() {
                         )}
                       </div>
                       <span className={s.ivDotLg} style={{ background: '#0284C7' }}>
-                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="3"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>
+                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="3"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z" /></svg>
                       </span>
                     </div>
                     <div className={s.ivHeaderMeta}>
@@ -590,7 +621,7 @@ export default function Dashboard() {
                         Watch Recording
                       </button>
                     )}
-                    <button className={s.ivDetailsBtnNew} onClick={() => { }}>Details</button>
+                    <button className={s.ivDetailsBtnNew} onClick={() => handleViewProctoringDetails(interview)}>Details</button>
                   </div>
                 </div>
               );
@@ -619,6 +650,84 @@ export default function Dashboard() {
               v.paused ? v.play() : v.pause();
             }} className={s.videoControlBtnPlay}>⏯ Play / Pause</button>
             <button onClick={() => { document.getElementById('iv-video-player').currentTime += 5; }} className={s.videoControlBtn}>+5s</button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderProctoringModal = () => {
+    if (!proctoringModalIv) return null;
+    return (
+      <div className={s.modalOverlay} onClick={() => setProctoringModalIv(null)}>
+        <div className={s.modalBox} style={{ maxWidth: '600px', width: '90%' }} onClick={(e) => e.stopPropagation()}>
+          <div className={s.modalHeader} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h3 className={s.modalTitle} style={{ margin: 0 }}>Proctoring Summary</h3>
+            <button style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#64748B' }} onClick={() => setProctoringModalIv(null)}>×</button>
+          </div>
+          
+          <div className={s.modalBody}>
+            <div style={{ marginBottom: '20px', padding: '12px', background: '#F8FAFC', borderRadius: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontWeight: 600, color: '#1E293B' }}>Candidate:</span>
+                <span>{proctoringModalIv.candidate_name}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ fontWeight: 600, color: '#1E293B' }}>Role:</span>
+                <span>{proctoringModalIv.role_title}</span>
+              </div>
+            </div>
+
+            <h4 style={{ marginBottom: '12px', color: '#475569' }}>Violation Logs</h4>
+            
+            {isFetchingLogs ? (
+              <p style={{ textAlign: 'center', color: '#64748B' }}>Loading logs...</p>
+            ) : proctoringLogs.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '32px', background: '#F1F5F9', borderRadius: '8px' }}>
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2" style={{ marginBottom: '8px' }}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+                <p style={{ color: '#64748B', margin: 0 }}>No violations recorded for this session.</p>
+              </div>
+            ) : (
+              <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid #E2E8F0', borderRadius: '8px' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead style={{ position: 'sticky', top: 0, background: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
+                    <tr>
+                      <th style={{ textAlign: 'left', padding: '10px', fontSize: '12px', color: '#64748B' }}>Time</th>
+                      <th style={{ textAlign: 'left', padding: '10px', fontSize: '12px', color: '#64748B' }}>Type</th>
+                      <th style={{ textAlign: 'left', padding: '10px', fontSize: '12px', color: '#64748B' }}>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {proctoringLogs.map((log, index) => (
+                      <tr key={log.id} style={{ borderBottom: index === proctoringLogs.length - 1 ? 'none' : '1px solid #F1F5F9' }}>
+                        <td style={{ padding: '10px', fontSize: '13px' }}>
+                          {new Date(log.created_at + 'Z').toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                        </td>
+                        <td style={{ padding: '10px', fontSize: '13px' }}>
+                          <span style={{ 
+                            padding: '2px 8px', 
+                            borderRadius: '4px', 
+                            fontSize: '11px', 
+                            fontWeight: 600,
+                            background: log.type === 'TERMINATE' ? '#FEE2E2' : '#FFEDD5',
+                            color: log.type === 'TERMINATE' ? '#991B1B' : '#9A3412'
+                          }}>
+                            {log.type}
+                          </span>
+                        </td>
+                        <td style={{ padding: '10px', fontSize: '13px', color: '#334155' }}>
+                          {log.message}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+          
+          <div className={s.modalActions} style={{ marginTop: '24px' }}>
+            <button className={s.modalJoinBtn} onClick={() => setProctoringModalIv(null)}>Close</button>
           </div>
         </div>
       </div>
@@ -671,7 +780,7 @@ export default function Dashboard() {
                       </div>
                     )}
                     <div className={s.candAvatarBadge}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z" /></svg>
                     </div>
                   </div>
                 </div>
@@ -2022,7 +2131,7 @@ export default function Dashboard() {
                       </div>
                     )}
                     <div className={s.candAvatarBadge}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z" /></svg>
                     </div>
                   </div>
                 </div>
@@ -2392,7 +2501,9 @@ export default function Dashboard() {
   let unreadNotifications = [];
   if (role === 'admin') {
     // DB notifications for admin
-    const dbNotifs = notifications.map(n => ({ id: n.id, message: n.message, is_read: parseInt(n.is_read) === 1 }));
+    const dbNotifs = notifications
+      .filter(n => !(n.message && n.message.includes('has applied for')))
+      .map(n => ({ id: n.id, message: n.message, is_read: parseInt(n.is_read) === 1 }));
     // Also show pending app count summaries (synthetic, no DB id)
     const counts = {};
     applications.forEach(a => {
@@ -2402,7 +2513,7 @@ export default function Dashboard() {
       }
     });
     const appCountNotifs = Object.entries(counts).map(([t, c]) => ({
-      id: null, message: `${c} new application${c > 1 ? 's' : ''} for ${t}`, is_read: false
+      id: null, message: `${c} new application${c > 1 ? 's' : ''} for ${t}`, is_read: seenPendingCounts[t] === c
     }));
     unreadNotifications = [...dbNotifs, ...appCountNotifs];
   } else {
@@ -2413,7 +2524,7 @@ export default function Dashboard() {
 
   const handleNotificationsOpened = async () => {
     // Mark all unread DB notifications as read
-    const unreadDbNotifs = notifications.filter(n => !n.is_read);
+    const unreadDbNotifs = notifications.filter(n => !n.is_read && !(n.message && n.message.includes('has applied for')));
     for (const n of unreadDbNotifs) {
       try {
         await notificationsAPI.markRead(n.id);
@@ -2421,6 +2532,224 @@ export default function Dashboard() {
     }
     // Update local state
     setNotifications(prev => prev.map(n => ({ ...n, is_read: 1 })));
+
+    // Mark synthetic appCountNotifs as read by saving current counts locally
+    if (role === 'admin') {
+      const counts = {};
+      applications.forEach(a => {
+        if (a.status === 'Pending') {
+          const title = a.role_title || 'Unknown Role';
+          counts[title] = (counts[title] || 0) + 1;
+        }
+      });
+      setSeenPendingCounts(counts);
+      if (userId) {
+        localStorage.setItem(`seenPendingCounts_${userId}`, JSON.stringify(counts));
+      }
+    }
+  };
+
+  const renderStatusConfirmModal = () => {
+    if (!progressConfirmModal) return null;
+    const { action, appId, candidateName, roleTitle } = progressConfirmModal;
+    return (
+      <div className={s.modalOverlay} onClick={() => setProgressConfirmModal(null)}>
+        <div className={s.modalBox} onClick={(e) => e.stopPropagation()}>
+          <h3 className={s.modalTitle}>{action === 'Selected' ? 'Confirm Selection' : 'Confirm Rejection'}</h3>
+          <div className={s.modalBody}>
+            <p className={s.modalConfirmText}>
+              Are you sure you want to <strong>{action.toLowerCase()}</strong> <strong>{candidateName}</strong> for the <strong>{roleTitle}</strong> position?
+            </p>
+            <p style={{ fontSize: '13px', color: '#64748B', marginTop: '12px' }}>
+              This will update their application status and notify the candidate.
+            </p>
+          </div>
+          <div className={s.modalActions}>
+            <button className={s.modalCancelBtn} onClick={() => setProgressConfirmModal(null)}>Cancel</button>
+            <button
+              className={action === 'Selected' ? s.modalJoinBtn : s.appRejectBtnNew}
+              style={{ padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}
+              onClick={async () => {
+                await handleAppStatusUpdate(appId, action);
+                setProgressConfirmModal(null);
+                if (currentPage === 'candidateDetail') {
+                   // Refresh current app detail if on detail page
+                   fetchData(role, userId);
+                }
+              }}
+            >
+              Confirm {action}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderScheduleModal = () => {
+    if (!scheduleModal) return null;
+
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const minDate = tomorrow.toISOString().split('T')[0];
+
+    // Time Slots for scheduling
+    const TIME_SLOTS = [
+      '09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM',
+      '01:00 PM', '02:00 PM', '03:00 PM', '04:00 PM', '05:00 PM'
+    ];
+
+    const handleDateChange = async (date) => {
+      setSchedDate(date);
+      setSchedTime('');
+      try {
+        const res = await interviewsAPI.getBookedSlots(date);
+        setBookedSlots(res.data.booked_slots || []);
+      } catch (e) {
+        setBookedSlots([]);
+      }
+    };
+
+    const handleConfirm = async () => {
+      if (!schedDate || !schedTime || !schedTopic.trim()) {
+        showToast('Please provide a Date, Time, and Role.');
+        return;
+      }
+      const selectedRoleObj = rolesList.find(r => r.title === schedTopic);
+      setIsScheduling(true);
+
+      try {
+        if (scheduleModal.appId) {
+          // Normal flow: approve application + create interview
+          await handleAppStatusUpdate(scheduleModal.appId, 'Approved', {
+            scheduled_date: schedDate,
+            scheduled_time: schedTime,
+            role_title: selectedRoleObj ? selectedRoleObj.title : schedTopic,
+            domain: selectedRoleObj ? selectedRoleObj.domain : '',
+            interview_type: schedType
+          });
+        } else {
+          // Direct scheduling: create interview without application
+          const is_ai = schedType === 'AI' ? 1 : 0;
+          await interviewsAPI.create({
+            candidate_id: scheduleModal.candidateId,
+            candidate_name: scheduleModal.candidateName,
+            role_title: selectedRoleObj ? selectedRoleObj.title : schedTopic,
+            domain: selectedRoleObj ? selectedRoleObj.domain : '',
+            scheduled_date: schedDate,
+            scheduled_time: schedTime,
+            duration_minutes: 60,
+            is_ai_interview: is_ai
+          });
+          fetchData(role, userId);
+        }
+        showToast(`Interview scheduled for ${scheduleModal.candidateName} on ${schedDate} at ${schedTime}`);
+      } catch (err) {
+        console.error('Failed to schedule interview:', err);
+        showToast('Failed to create interview. Please try again.');
+      }
+      setIsScheduling(false);
+      setScheduleModal(null);
+    };
+
+    return (
+      <div className={s.schedOverlay} onClick={() => setScheduleModal(null)}>
+        <div className={s.schedModal} onClick={e => e.stopPropagation()}>
+          <div className={s.schedHeader}>
+            <h3 className={s.schedTitle}>Schedule Interview</h3>
+            <button className={s.schedCloseBtn} onClick={() => setScheduleModal(null)}>×</button>
+          </div>
+          <p className={s.schedSubtext}>
+            Scheduling interview for <strong>{scheduleModal.candidateName}</strong>
+          </p>
+
+          {/* Select Role */}
+          <div className={s.schedSection}>
+            <label className={s.schedLabel}>Select Role (Topic)</label>
+            <select
+              className={s.schedDateInput}
+              value={schedTopic}
+              onChange={e => setSchedTopic(e.target.value)}
+            >
+              <option value="">Select a role...</option>
+              {rolesList.map((r, i) => (
+                <option key={r.id || i} value={r.title}>{r.title}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Date Picker */}
+          <div className={s.schedSection}>
+            <label className={s.schedLabel}>Select Date</label>
+            <input
+              type="date"
+              className={s.schedDateInput}
+              min={minDate}
+              value={schedDate}
+              onChange={e => handleDateChange(e.target.value)}
+            />
+          </div>
+
+          {/* Time Slots */}
+          {schedDate && (
+            <div className={s.schedSection}>
+              <label className={s.schedLabel}>Select Time Slot</label>
+              <div className={s.schedTimeGrid}>
+                {TIME_SLOTS.map(slot => {
+                  const isBooked = bookedSlots.includes(slot);
+                  const isSelected = schedTime === slot;
+                  return (
+                    <button
+                      key={slot}
+                      className={`${s.schedTimeSlot} ${isBooked ? s.schedTimeBooked : ''} ${isSelected ? s.schedTimeSelected : ''}`}
+                      disabled={isBooked}
+                      onClick={() => setSchedTime(slot)}
+                      title={isBooked ? 'This slot is already booked' : ''}
+                    >
+                      {slot}
+                      {isBooked && <span className={s.schedBookedBadge}>Booked</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Interview Type Toggle */}
+          <div className={s.schedSection}>
+            <label className={s.schedLabel}>Interview Type</label>
+            <div className={s.schedToggleWrap}>
+              <button
+                className={`${s.schedToggleBtn} ${schedType === 'AI' ? s.schedToggleActive : ''}`}
+                onClick={() => setSchedType('AI')}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10" /></svg>
+                AI Interview
+              </button>
+              <button
+                className={`${s.schedToggleBtn} ${schedType === 'Admin' ? s.schedToggleActive : ''}`}
+                onClick={() => setSchedType('Admin')}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+                Admin Interview
+              </button>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className={s.schedActions}>
+            <button
+              className={s.schedConfirmBtn}
+              onClick={handleConfirm}
+              disabled={!schedDate || !schedTime || isScheduling}
+            >
+              {isScheduling ? 'Scheduling...' : 'Confirm & Approve'}
+            </button>
+            <button className={s.schedCancelBtn} onClick={() => setScheduleModal(null)}>Cancel</button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -2430,234 +2759,34 @@ export default function Dashboard() {
         <meta name="description" content="AI Interview Room Dashboard - Blue Planet InfoSolutions" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
       </Head>
-      <div className={s.dashPage}>
-        <Navbar
-          role={role}
+
+      <div className={s.dashWrapper}>
+        <Navbar 
           currentPage={currentPage}
           onPageChange={handlePageChange}
-          profileData={{ ...profile, _skillsInput: profileSkillsInput }}
+          role={role}
+          userName={profile?.full_name || 'User'}
           notifications={unreadNotifications}
           onNotificationsOpened={handleNotificationsOpened}
-          onProfileSave={(field, value) => {
-            if (field === '_save') {
-              handleProfileSave();
-            } else if (field === '_skillsInput') {
-              setProfileSkillsInput(value);
-            } else {
-              setProfile(p => ({ ...p, [field]: value }));
-            }
-          }}
-          onResumeUpload={handleResumeUpload}
-          onPhotoUpload={handlePhotoUpload}
-          profileMsg={profileMsg}
         />
+
         <main className={s.dashMain}>
           {renderContent()}
+
           {renderJoinModal()}
           {renderVideoModal()}
-
-          {/* Progress Confirm Modal */}
-          {progressConfirmModal && (
-            <div className={s.deleteModal}>
-              <div className={s.deleteModalBox}>
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={progressConfirmModal.action === 'Selected' ? "#10B981" : "#EF4444"} strokeWidth="1.5">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M12 8v4" />
-                  <path d="M12 16h.01" />
-                </svg>
-                <h4 style={{ margin: '12px 0 4px', color: '#0A2540' }}>
-                  {progressConfirmModal.action === 'Selected' ? 'Select Candidate?' : 'Reject Candidate?'}
-                </h4>
-                <p style={{ color: '#64748B', fontSize: 14, marginBottom: 20, textAlign: 'center' }}>
-                  Are you sure you want to {progressConfirmModal.action === 'Selected' ? 'select' : 'reject'} <strong>{progressConfirmModal.candidateName}</strong> for the <strong>{progressConfirmModal.roleTitle}</strong> role? This will notify them immediately.
-                </p>
-                <div style={{ display: 'flex', gap: 12 }}>
-                  <button
-                    className={s.primaryBtn}
-                    style={{ background: progressConfirmModal.action === 'Selected' ? '#10B981' : '#EF4444', borderColor: progressConfirmModal.action === 'Selected' ? '#10B981' : '#EF4444' }}
-                    onClick={async () => {
-                      setIsUpdatingStatus(true);
-                      await handleAppStatusUpdate(progressConfirmModal.appId, progressConfirmModal.action);
-                      setIsUpdatingStatus(false);
-                      setProgressConfirmModal(null);
-                    }}
-                  >
-                    Yes, {progressConfirmModal.action === 'Selected' ? 'Select' : 'Reject'}
-                  </button>
-                  <button className={s.approveBtn} onClick={() => setProgressConfirmModal(null)}>Cancel</button>
-                </div>
+          {renderProctoringModal()}
+          {renderStatusConfirmModal()}
+          {renderScheduleModal()}
+          
+          {toastMsg && (
+            <div className={s.toast}>
+              <div className={s.toastInner}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+                {toastMsg}
               </div>
             </div>
           )}
-
-          {toastMsg && <div className={s.toast}>{toastMsg}</div>}
-
-          {/* ===== SCHEDULE MODAL ===== */}
-          {scheduleModal && (() => {
-            const TIME_SLOTS = [
-              '09:00 AM', '09:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM',
-              '12:00 PM', '12:30 PM', '01:00 PM', '01:30 PM', '02:00 PM', '02:30 PM',
-              '03:00 PM', '03:30 PM', '04:00 PM', '04:30 PM', '05:00 PM', '05:30 PM'
-            ];
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            const minDate = tomorrow.toISOString().split('T')[0];
-
-            const handleDateChange = async (date) => {
-              setSchedDate(date);
-              setSchedTime('');
-              try {
-                const res = await interviewsAPI.getBookedSlots(date);
-                setBookedSlots(res.data.booked_slots || []);
-              } catch (e) {
-                setBookedSlots([]);
-              }
-            };
-
-            const handleConfirm = async () => {
-              if (!schedDate || !schedTime || !schedTopic.trim()) {
-                showToast('Please provide a Date, Time, and Role.');
-                return;
-              }
-              const selectedRoleObj = rolesList.find(r => r.title === schedTopic);
-              setIsScheduling(true);
-
-              if (scheduleModal.appId) {
-                // Normal flow: approve application + create interview
-                await handleAppStatusUpdate(scheduleModal.appId, 'Approved', {
-                  scheduled_date: schedDate,
-                  scheduled_time: schedTime,
-                  role_title: selectedRoleObj ? selectedRoleObj.title : schedTopic,
-                  domain: selectedRoleObj ? selectedRoleObj.domain : '',
-                  interview_type: schedType
-                });
-              } else {
-                // Direct scheduling: create interview without application
-                try {
-                  const is_ai = schedType === 'AI' ? 1 : 0;
-                  await interviewsAPI.create({
-                    candidate_id: scheduleModal.candidateId,
-                    candidate_name: scheduleModal.candidateName,
-                    role_title: selectedRoleObj ? selectedRoleObj.title : schedTopic,
-                    domain: selectedRoleObj ? selectedRoleObj.domain : '',
-                    scheduled_date: schedDate,
-                    scheduled_time: schedTime,
-                    duration_minutes: 60,
-                    questions: [
-                      { category: 'Introduction', text: 'Can you tell me a little about yourself and your background?' },
-                      { category: 'Experience', text: "Describe a challenging project you've worked on recently." },
-                      { category: 'Technical', text: 'What are your strongest technical skills?' },
-                    ]
-                  });
-                  fetchData(role, userId);
-                } catch (err) {
-                  showToast('Failed to create interview.');
-                }
-              }
-              setIsScheduling(false);
-              setScheduleModal(null);
-              showToast(`Interview scheduled for ${scheduleModal.candidateName} on ${schedDate} at ${schedTime}`);
-            };
-
-            return (
-              <div className={s.schedOverlay} onClick={() => setScheduleModal(null)}>
-                <div className={s.schedModal} onClick={e => e.stopPropagation()}>
-                  <div className={s.schedHeader}>
-                    <h3 className={s.schedTitle}>Schedule Interview</h3>
-                    <button className={s.schedCloseBtn} onClick={() => setScheduleModal(null)}>×</button>
-                  </div>
-                  <p className={s.schedSubtext}>
-                    Scheduling interview for <strong>{scheduleModal.candidateName}</strong>
-                  </p>
-
-                  {/* Select Role */}
-                  <div className={s.schedSection}>
-                    <label className={s.schedLabel}>Select Role (Topic)</label>
-                    <select
-                      className={s.schedDateInput} /* Reusing styles for text input */
-                      value={schedTopic}
-                      onChange={e => setSchedTopic(e.target.value)}
-                    >
-                      <option value="">Select a role...</option>
-                      {rolesList.map((r, i) => (
-                        <option key={r.id || i} value={r.title}>{r.title}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Date Picker */}
-                  <div className={s.schedSection}>
-                    <label className={s.schedLabel}>Select Date</label>
-                    <input
-                      type="date"
-                      className={s.schedDateInput}
-                      min={minDate}
-                      value={schedDate}
-                      onChange={e => handleDateChange(e.target.value)}
-                    />
-                  </div>
-
-                  {/* Time Slots */}
-                  {schedDate && (
-                    <div className={s.schedSection}>
-                      <label className={s.schedLabel}>Select Time Slot</label>
-                      <div className={s.schedTimeGrid}>
-                        {TIME_SLOTS.map(slot => {
-                          const isBooked = bookedSlots.includes(slot);
-                          const isSelected = schedTime === slot;
-                          return (
-                            <button
-                              key={slot}
-                              className={`${s.schedTimeSlot} ${isBooked ? s.schedTimeBooked : ''} ${isSelected ? s.schedTimeSelected : ''}`}
-                              disabled={isBooked}
-                              onClick={() => setSchedTime(slot)}
-                              title={isBooked ? 'This slot is already booked' : ''}
-                            >
-                              {slot}
-                              {isBooked && <span className={s.schedBookedBadge}>Booked</span>}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Interview Type Toggle */}
-                  <div className={s.schedSection}>
-                    <label className={s.schedLabel}>Interview Type</label>
-                    <div className={s.schedToggleWrap}>
-                      <button
-                        className={`${s.schedToggleBtn} ${schedType === 'AI' ? s.schedToggleActive : ''}`}
-                        onClick={() => setSchedType('AI')}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10" /></svg>
-                        AI Interview
-                      </button>
-                      <button
-                        className={`${s.schedToggleBtn} ${schedType === 'Admin' ? s.schedToggleActive : ''}`}
-                        onClick={() => setSchedType('Admin')}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
-                        Admin Interview
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className={s.schedActions}>
-                    <button
-                      className={s.schedConfirmBtn}
-                      onClick={handleConfirm}
-                      disabled={!schedDate || !schedTime || isScheduling}
-                    >
-                      {isScheduling ? 'Scheduling...' : 'Confirm & Approve'}
-                    </button>
-                    <button className={s.schedCancelBtn} onClick={() => setScheduleModal(null)}>Cancel</button>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
         </main>
       </div>
     </>

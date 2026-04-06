@@ -142,6 +142,17 @@ def init_db():
         )
     """)
 
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS proctoring_violations (
+            id TEXT PRIMARY KEY,
+            interview_id TEXT NOT NULL,
+            type TEXT NOT NULL,
+            message TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            FOREIGN KEY (interview_id) REFERENCES interviews(id)
+        )
+    """)
+
     new_profile_cols = [
         ("location", "TEXT DEFAULT ''"),
         ("experience", "TEXT DEFAULT ''"),
@@ -723,6 +734,28 @@ def mark_notification_read(notification_id: str):
     conn.execute("UPDATE notifications SET is_read = 1 WHERE id = ?", (notification_id,))
     conn.commit()
     conn.close()
+
+
+def log_proctoring_violation(interview_id: str, v_type: str, message: str):
+    conn = get_db()
+    vid = str(uuid.uuid4())
+    conn.execute(
+        "INSERT INTO proctoring_violations (id, interview_id, type, message) VALUES (?, ?, ?, ?)",
+        (vid, interview_id, v_type, message)
+    )
+    conn.commit()
+    conn.close()
+    return vid
+
+
+def get_proctoring_logs(interview_id: str):
+    conn = get_db()
+    rows = conn.execute(
+        "SELECT * FROM proctoring_violations WHERE interview_id = ? ORDER BY created_at ASC",
+        (interview_id,)
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
 
 
 # Initialize database on import

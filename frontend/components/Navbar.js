@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { usersAPI } from '../services/api';
+import { usersAPI, settingsAPI } from '../services/api';
 import { useRouter } from 'next/router';
 import BrandLockup, { BrandLogo } from './BrandLockup';
 import n from '../styles/navbar.module.css';
@@ -15,16 +15,106 @@ export default function Navbar({ role, currentPage, onPageChange, profileData, o
   const [notifOpen, setNotifOpen] = useState(false);
   const notifRef = useRef(null);
 
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const settingsRef = useRef(null);
+
+  const [candidateSettings, setCandidateSettings] = useState({
+    camera: 'default',
+    microphone: 'default',
+    showWarnings: true,
+    showOverlay: false,
+    darkMode: false,
+    oldPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+    passwordMsg: ''
+  });
+
+  const [adminSettings, setAdminSettings] = useState({
+    phoneDetect: true,
+    multiFaceDetect: true,
+    noFaceDetect: true,
+    warningLimit: 3,
+    warningCooldown: 5,
+    defaultDuration: 30,
+    difficulty: 'Medium',
+    autoTerminate: true,
+    enableLogs: false,
+    showScores: false,
+    showBoxes: false,
+    sessionTimeout: 60
+  });
+
   const [adminProfileData, setAdminProfileData] = useState({ name: '', oldPassword: '', newPassword: '' });
   const [adminProfileMsg, setAdminProfileMsg] = useState('');
+  const [adminSettingsMsg, setAdminSettingsMsg] = useState('');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const uName = localStorage.getItem('userName') || 'User';
       setUserName(uName);
       setAdminProfileData(prev => ({ ...prev, name: uName }));
+
+      const fetchAdminConfig = async () => {
+        try {
+          const res = await settingsAPI.get();
+          if (res.data) setAdminSettings(res.data);
+        } catch (e) {
+          console.error("Failed to load global settings", e);
+        }
+      };
+      if (role === 'admin') fetchAdminConfig();
     }
-  }, []);
+  }, [role]);
+
+  const handleAdminSettingsSave = async () => {
+    setAdminSettingsMsg('Saving parameter configuration...');
+    try {
+      const res = await settingsAPI.update(adminSettings);
+      if (res.data.settings) {
+        setAdminSettingsMsg('Configuration updated successfully!');
+        setAdminSettings(res.data.settings);
+      } else {
+        setAdminSettingsMsg('Configuration update failed.');
+      }
+    } catch (e) {
+      setAdminSettingsMsg('Failed to update configuration.');
+    }
+    setTimeout(() => setAdminSettingsMsg(''), 4000);
+  };
+
+  const handleCandidatePasswordChange = async () => {
+    if (!candidateSettings.oldPassword || !candidateSettings.newPassword || !candidateSettings.confirmPassword) {
+      setCandidateSettings(prev => ({ ...prev, passwordMsg: 'All fields are required.' }));
+      return;
+    }
+    if (candidateSettings.newPassword !== candidateSettings.confirmPassword) {
+      setCandidateSettings(prev => ({ ...prev, passwordMsg: 'New passwords do not match.' }));
+      return;
+    }
+    setCandidateSettings(prev => ({ ...prev, passwordMsg: 'Updating...' }));
+    try {
+      const formData = new FormData();
+      formData.append('user_id', localStorage.getItem('userId'));
+      formData.append('old_password', candidateSettings.oldPassword);
+      formData.append('new_password', candidateSettings.newPassword);
+
+      const res = await usersAPI.updatePassword(formData);
+      if (res.data.error) {
+        setCandidateSettings(prev => ({ ...prev, passwordMsg: res.data.error }));
+      } else {
+        setCandidateSettings(prev => ({
+          ...prev,
+          passwordMsg: 'Password updated successfully!',
+          oldPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        }));
+      }
+    } catch (err) {
+      setCandidateSettings(prev => ({ ...prev, passwordMsg: 'Failed to update password.' }));
+    }
+  };
 
   const handleAdminSave = async () => {
     setAdminProfileMsg('Saving...');
@@ -60,10 +150,13 @@ export default function Navbar({ role, currentPage, onPageChange, profileData, o
       if (notifRef.current && !notifRef.current.contains(e.target)) {
         setNotifOpen(false);
       }
+      if (settingsRef.current && !settingsRef.current.contains(e.target)) {
+        setSettingsOpen(false);
+      }
     };
-    if (profileOpen || notifOpen) document.addEventListener('mousedown', handleClick);
+    if (profileOpen || notifOpen || settingsOpen) document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
-  }, [profileOpen, notifOpen]);
+  }, [profileOpen, notifOpen, settingsOpen]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -205,12 +298,165 @@ export default function Navbar({ role, currentPage, onPageChange, profileData, o
               </div>
             )}
           </div>
-          <button className={n.iconBtn}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-            </svg>
-          </button>
+          <div className={n.profileWrap} ref={settingsRef}>
+            <button className={n.iconBtn} onClick={() => {
+              const wasOpen = settingsOpen;
+              setSettingsOpen(!settingsOpen);
+              if (!wasOpen) { setProfileOpen(false); setNotifOpen(false); }
+            }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              </svg>
+            </button>
+            {settingsOpen && (
+              <div className={n.profilePanel} style={{ width: '400px', cursor: 'default' }}>
+                <div className={n.ppHeader}>
+                  <h3 className={n.ppTitle}>Settings</h3>
+                  <button className={n.ppClose} onClick={() => setSettingsOpen(false)}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                  </button>
+                </div>
+                <div className={n.ppBody} style={{ padding: '20px 24px', position: 'relative' }}>
+                  {role === 'candidate' ? (
+                    <>
+                      <div className={n.ppField}>
+                        <label className={n.ppLabel} style={{ fontSize: '13px', color: '#0A2540' }}>Interview Setup</label>
+                      </div>
+                      <div className={n.ppField}>
+                        <label className={n.ppLabel} style={{ fontWeight: 'normal', marginTop: '-4px' }}>Camera</label>
+                        <select className={n.ppInput} value={candidateSettings.camera} onChange={e => setCandidateSettings({ ...candidateSettings, camera: e.target.value })}>
+                          <option value="default">Default Camera</option>
+                        </select>
+                      </div>
+                      <div className={n.ppField}>
+                        <label className={n.ppLabel} style={{ fontWeight: 'normal', marginTop: '-4px' }}>Microphone</label>
+                        <select className={n.ppInput} value={candidateSettings.microphone} onChange={e => setCandidateSettings({ ...candidateSettings, microphone: e.target.value })}>
+                          <option value="default">Default Microphone</option>
+                        </select>
+                      </div>
+                      <div className={n.ppField}>
+                        <button className={n.ppResumeBtn} style={{ marginTop: '4px' }}>Test Audio Output</button>
+                      </div>
+                      <div className={n.ppDivider} style={{ margin: '14px 0' }}></div>
+                      
+                      <div className={n.ppField}>
+                        <label className={n.ppLabel} style={{ fontSize: '13px', color: '#0A2540' }}>AI Preferences</label>
+                      </div>
+                      <div className={n.ppField} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: '2px' }}>
+                        <span style={{ fontSize: '13px', color: '#1F2937' }}>Show real-time warnings</span>
+                        <input type="checkbox" checked={candidateSettings.showWarnings} onChange={e => setCandidateSettings({ ...candidateSettings, showWarnings: e.target.checked })} style={{ accentColor: '#00A3E0', width: '16px', height: '16px' }} />
+                      </div>
+                      <div className={n.ppField} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: '13px', color: '#1F2937' }}>Show detection overlay</span>
+                        <input type="checkbox" checked={candidateSettings.showOverlay} onChange={e => setCandidateSettings({ ...candidateSettings, showOverlay: e.target.checked })} style={{ accentColor: '#00A3E0', width: '16px', height: '16px' }} />
+                      </div>
+                      <div className={n.ppDivider} style={{ margin: '14px 0' }}></div>
+
+                      <div className={n.ppField}>
+                        <label className={n.ppLabel} style={{ fontSize: '13px', color: '#0A2540' }}>Appearance</label>
+                      </div>
+                      <div className={n.ppField} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: '2px' }}>
+                        <span style={{ fontSize: '13px', color: '#1F2937' }}>Dark Mode</span>
+                        <input type="checkbox" checked={candidateSettings.darkMode} onChange={e => setCandidateSettings({ ...candidateSettings, darkMode: e.target.checked })} style={{ accentColor: '#00A3E0', width: '16px', height: '16px' }} />
+                      </div>
+                      <div className={n.ppDivider} style={{ margin: '14px 0' }}></div>
+
+                      <div className={n.ppField}>
+                        <label className={n.ppLabel} style={{ fontSize: '13px', color: '#0A2540' }}>Security</label>
+                      </div>
+                      <div className={n.ppField} style={{ marginTop: '2px', display: 'flex', flexDirection: 'column' }}>
+                        <input className={n.ppInput} type="password" placeholder="Previous Password" value={candidateSettings.oldPassword} onChange={e => setCandidateSettings({ ...candidateSettings, oldPassword: e.target.value, passwordMsg: '' })} style={{ marginBottom: '8px' }} />
+                        <input className={n.ppInput} type="password" placeholder="New Password" value={candidateSettings.newPassword} onChange={e => setCandidateSettings({ ...candidateSettings, newPassword: e.target.value, passwordMsg: '' })} style={{ marginBottom: '8px' }} />
+                        <input className={n.ppInput} type="password" placeholder="Confirm Password" value={candidateSettings.confirmPassword} onChange={e => setCandidateSettings({ ...candidateSettings, confirmPassword: e.target.value, passwordMsg: '' })} />
+                        <button className={n.ppSaveBtn} style={{ marginTop: '8px' }} onClick={handleCandidatePasswordChange}>Change Password</button>
+                        {candidateSettings.passwordMsg && <p style={{ fontSize: '12px', color: candidateSettings.passwordMsg.includes('success') ? '#10B981' : '#EF4444', marginTop: '8px', textAlign: 'center' }}>{candidateSettings.passwordMsg}</p>}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className={n.ppField}>
+                        <label className={n.ppLabel} style={{ fontSize: '13px', color: '#0A2540' }}>AI Proctoring Control</label>
+                      </div>
+                      <div className={n.ppField} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: '2px' }}>
+                        <span style={{ fontSize: '13px', color: '#1F2937' }}>Phone Detection</span>
+                        <input type="checkbox" checked={adminSettings.phoneDetect} onChange={e => setAdminSettings({ ...adminSettings, phoneDetect: e.target.checked })} style={{ accentColor: '#00A3E0', width: '16px', height: '16px' }} />
+                      </div>
+                      <div className={n.ppField} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: '13px', color: '#1F2937' }}>Multiple Faces Detection</span>
+                        <input type="checkbox" checked={adminSettings.multiFaceDetect} onChange={e => setAdminSettings({ ...adminSettings, multiFaceDetect: e.target.checked })} style={{ accentColor: '#00A3E0', width: '16px', height: '16px' }} />
+                      </div>
+                      <div className={n.ppField} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: '13px', color: '#1F2937' }}>No Face Detection</span>
+                        <input type="checkbox" checked={adminSettings.noFaceDetect} onChange={e => setAdminSettings({ ...adminSettings, noFaceDetect: e.target.checked })} style={{ accentColor: '#00A3E0', width: '16px', height: '16px' }} />
+                      </div>
+
+                      <div className={n.ppField} style={{ marginTop: '8px' }}>
+                        <label className={n.ppLabel} style={{ fontWeight: 'normal' }}>Warning Limit</label>
+                        <input className={n.ppInput} type="number" min="1" value={adminSettings.warningLimit} onChange={e => setAdminSettings({ ...adminSettings, warningLimit: Number(e.target.value) })} />
+                      </div>
+                      <div className={n.ppField}>
+                        <label className={n.ppLabel} style={{ fontWeight: 'normal' }}>Warning Cooldown (s)</label>
+                        <input className={n.ppInput} type="number" min="1" value={adminSettings.warningCooldown} onChange={e => setAdminSettings({ ...adminSettings, warningCooldown: Number(e.target.value) })} />
+                      </div>
+                      <div className={n.ppDivider} style={{ margin: '14px 0' }}></div>
+
+                      <div className={n.ppField}>
+                        <label className={n.ppLabel} style={{ fontSize: '13px', color: '#0A2540' }}>Interview Control</label>
+                      </div>
+                      <div className={n.ppField} style={{ marginTop: '2px' }}>
+                        <label className={n.ppLabel} style={{ fontWeight: 'normal' }}>Default Duration (mins)</label>
+                        <input className={n.ppInput} type="number" min="5" value={adminSettings.defaultDuration} onChange={e => setAdminSettings({ ...adminSettings, defaultDuration: Number(e.target.value) })} />
+                      </div>
+                      <div className={n.ppField}>
+                        <label className={n.ppLabel} style={{ fontWeight: 'normal' }}>Difficulty Level</label>
+                        <select className={n.ppInput} value={adminSettings.difficulty} onChange={e => setAdminSettings({ ...adminSettings, difficulty: e.target.value })}>
+                          <option value="Easy">Easy</option>
+                          <option value="Medium">Medium</option>
+                          <option value="Hard">Hard</option>
+                        </select>
+                      </div>
+                      <div className={n.ppField} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px' }}>
+                        <span style={{ fontSize: '13px', color: '#1F2937' }}>Auto-terminate Interview</span>
+                        <input type="checkbox" checked={adminSettings.autoTerminate} onChange={e => setAdminSettings({ ...adminSettings, autoTerminate: e.target.checked })} style={{ accentColor: '#00A3E0', width: '16px', height: '16px' }} />
+                      </div>
+                      <div className={n.ppDivider} style={{ margin: '14px 0' }}></div>
+
+                      <div className={n.ppField}>
+                        <label className={n.ppLabel} style={{ fontSize: '13px', color: '#0A2540' }}>Advanced / Debug</label>
+                      </div>
+                      <div className={n.ppField} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: '2px' }}>
+                        <span style={{ fontSize: '13px', color: '#1F2937' }}>Enable Detection Logs</span>
+                        <input type="checkbox" checked={adminSettings.enableLogs} onChange={e => setAdminSettings({ ...adminSettings, enableLogs: e.target.checked })} style={{ accentColor: '#00A3E0', width: '16px', height: '16px' }} />
+                      </div>
+                      <div className={n.ppField} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: '13px', color: '#1F2937' }}>Show Confidence Scores</span>
+                        <input type="checkbox" checked={adminSettings.showScores} onChange={e => setAdminSettings({ ...adminSettings, showScores: e.target.checked })} style={{ accentColor: '#00A3E0', width: '16px', height: '16px' }} />
+                      </div>
+                      <div className={n.ppField} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: '13px', color: '#1F2937' }}>Show Bounding Boxes</span>
+                        <input type="checkbox" checked={adminSettings.showBoxes} onChange={e => setAdminSettings({ ...adminSettings, showBoxes: e.target.checked })} style={{ accentColor: '#00A3E0', width: '16px', height: '16px' }} />
+                      </div>
+                      <div className={n.ppDivider} style={{ margin: '14px 0' }}></div>
+
+                      <div className={n.ppField}>
+                        <label className={n.ppLabel} style={{ fontSize: '13px', color: '#0A2540' }}>Security</label>
+                      </div>
+                      <div className={n.ppField} style={{ marginTop: '2px' }}>
+                        <label className={n.ppLabel} style={{ fontWeight: 'normal' }}>Session Timeout (mins)</label>
+                        <input className={n.ppInput} type="number" min="1" value={adminSettings.sessionTimeout} onChange={e => setAdminSettings({ ...adminSettings, sessionTimeout: Number(e.target.value) })} />
+                      </div>
+                      <div className={n.ppField}>
+                        <button className={n.ppSaveBtn} style={{ marginTop: '12px' }} onClick={handleAdminSettingsSave}>Save Configuration</button>
+                        {adminSettingsMsg && <p style={{ fontSize: '12px', color: adminSettingsMsg.includes('success') ? '#10B981' : '#EF4444', marginTop: '8px', textAlign: 'center' }}>{adminSettingsMsg}</p>}
+                        <button className={n.ppSignOut} style={{ padding: '8px', borderRadius: '8px', border: '1px solid #EF4444', justifyContent: 'center', marginTop: '12px' }}>Force Logout Users</button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
           <div className={n.profileWrap} ref={panelRef}>
             <button className={n.profileBtn} onClick={() => setProfileOpen(!profileOpen)}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

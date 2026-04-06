@@ -4,6 +4,7 @@ import Head from 'next/head';
 import { io } from 'socket.io-client';
 import { interviewsAPI, questionsAPI } from '../services/api';
 import iv from '../styles/interview.module.css';
+import VideoRecorder from '../components/VideoRecorder';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
 
@@ -24,6 +25,8 @@ export default function Interview() {
   const streamRef = useRef(null);
   const analyserRef = useRef(null);
   const animFrameRef = useRef(null);
+  const hiddenCanvasRef = useRef(null);
+  const frameIntervalRef = useRef(null);
 
   // WebRTC for live mode
   const remoteVideoRef = useRef(null);
@@ -90,7 +93,23 @@ export default function Interview() {
   const userId = typeof window !== 'undefined' ? (localStorage.getItem('userId') || '') : '';
   const userRole = typeof window !== 'undefined' ? (localStorage.getItem('role') || 'candidate') : 'candidate';
 
+  const [proctorWarning, setProctorWarning] = useState(null);
+
   const initialized = useRef(false);
+
+  // Tab switching / application shifting penalty detection
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && userRole === 'candidate') {
+        if (socket && typeof socket.emit === 'function') {
+          socket.emit('tab_switched');
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [socket, userRole]);
 
   // Determine live mode (used in effects and JSX)
   // True when admin set the interview to live/admin mode
@@ -258,6 +277,57 @@ export default function Interview() {
             s.emit('webrtc_signal', { interview_id: roomId, signal: { type: 'offer', sdp: pc.localDescription } });
           } catch (err) {
             console.error('[WebRTC] offer creation failed:', err);
+          }
+        });
+
+        // ===== AI Real-Time Detections =====
+        s.on('ai_detection_result', (data) => {
+          if (!isActive) return;
+          // Silently log/process detection results in background without affecting UI
+          console.log('[AI Detection]', data);
+          
+          // Example: Check if a phone is detected or face is missing
+          if (data.detections) {
+            const hasPhone = data.detections.some(d => d.label === 'phone');
+            const hasFace = data.detections.some(d => d.label === 'face');
+            const faceCount = data.detections.filter(d => d.label === 'face').length;
+            
+            if (hasPhone) console.warn('⚠️ AI ALERT: Mobile phone detected');
+            if (!hasFace) console.warn('⚠️ AI ALERT: No face detected in frame');
+            if (faceCount > 1) console.warn(`⚠️ AI ALERT: Multiple faces detected (${faceCount})`);
+          }
+        });
+
+        // ===== PROCTORING SYSTEM ALERTS =====
+        s.on('proctoring_event', (eventData) => {
+          if (!isActive || userRole === 'admin') return;
+
+          if (eventData.type === 'WARNING') {
+            setProctorWarning(eventData.message);
+            setTimeout(() => setProctorWarning(null), 5000);
+          } else if (eventData.type === 'TERMINATE') {
+            setProctorWarning(`🚫 INTERVIEW TERMINATED: ${eventData.message}`);
+            
+            // Cleanup and End
+            window.speechSynthesis.cancel();
+            if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+              mediaRecorderRef.current.stop();
+            }
+            if (streamRef.current) {
+               streamRef.current.getTracks().forEach(t => t.stop());
+            }
+            if (videoRef.current) {
+               videoRef.current.srcObject = null;
+            }
+            
+            const finalId = id || 'demo-interview';
+            if (typeof window !== 'undefined') {
+              localStorage.removeItem(`interview_timer_${finalId}`);
+            }
+            
+            setTimeout(() => {
+              router.push('/dashboard');
+            }, 5000);
           }
         });
 
@@ -589,6 +659,48 @@ export default function Interview() {
     return `${m}:${s}`;
   };
 
+  // ===== REAL-TIME AI FRAME HANDLER =====
+  const roomId = id || interviewId || 'demo-interview';
+
+  useEffect(() => {
+    if (interviewStarted && socket && !finished && roomId && !camOff && !isLiveMode) {
+      console.log('[Debug] Starting native frame capture loop in interview.js');
+      if (frameIntervalRef.current) clearInterval(frameIntervalRef.current);
+      
+      frameIntervalRef.current = setInterval(() => {
+        if (!videoRef.current || !hiddenCanvasRef.current) return;
+        
+        const video = videoRef.current;
+        const canvas = hiddenCanvasRef.current;
+        
+        if (video.videoWidth === 0 || video.videoHeight === 0) return;
+        
+        const targetWidth = 320;
+        const targetHeight = 240;
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, targetWidth, targetHeight);
+        
+        const base64Data = canvas.toDataURL('image/jpeg', 0.6);
+        socket.emit('video_frame', {
+          interview_id: roomId,
+          frame_data: base64Data
+        });
+      }, 500);
+    } else {
+      if (frameIntervalRef.current) {
+        clearInterval(frameIntervalRef.current);
+        frameIntervalRef.current = null;
+      }
+    }
+    
+    return () => {
+      if (frameIntervalRef.current) clearInterval(frameIntervalRef.current);
+    };
+  }, [interviewStarted, socket, finished, roomId, camOff, isLiveMode]);
+
   // ===== MEDIA CONTROL HANDLERS =====
 
   const toggleMic = () => {
@@ -865,6 +977,42 @@ export default function Interview() {
     );
   }
 
+  const proctorToast = proctorWarning ? (
+    <div style={{
+      position: 'fixed',
+      top: '24px',
+      left: '50%',
+      transform: 'translateX(-50%)',
+      backgroundColor: '#EF4444',
+      color: 'white',
+      padding: '16px 24px',
+      borderRadius: '8px',
+      boxShadow: '0 4px 12px rgba(239, 68, 68, 0.4)',
+      zIndex: 9999,
+      display: 'flex',
+      alignItems: 'center',
+      gap: '12px',
+      fontFamily: "'Inter', sans-serif",
+      animation: 'toastFadeIn 0.3s ease-out'
+    }}>
+      <style>{`
+        @keyframes toastFadeIn {
+          from { opacity: 0; transform: translate(-50%, -20px); }
+          to { opacity: 1; transform: translate(-50%, 0); }
+        }
+      `}</style>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+        <line x1="12" y1="9" x2="12" y2="13" />
+        <line x1="12" y1="17" x2="12.01" y2="17" />
+      </svg>
+      <div>
+        <div style={{ fontSize: '15px', fontWeight: 600 }}>⚠️ PROCTORING WARNING</div>
+        <div style={{ fontSize: '13px', marginTop: '4px', fontWeight: 500, opacity: 0.9 }}>{proctorWarning}</div>
+      </div>
+    </div>
+  ) : null;
+
   if (!currentQuestion) return null;
 
   // ========== ADMIN / LIVE INTERVIEW ROOM ==========
@@ -878,6 +1026,7 @@ export default function Interview() {
         </Head>
 
         <div className={iv.interviewPage}>
+          {proctorToast}
           {/* Top Bar */}
           <div className={iv.topBar}>
             <div className={iv.topLeft}>
@@ -976,6 +1125,7 @@ export default function Interview() {
                     </span>
                     You
                   </div>
+                  <canvas ref={hiddenCanvasRef} style={{ display: 'none' }} />
                 </div>
               </div>
 
@@ -1023,6 +1173,7 @@ export default function Interview() {
       </Head>
 
       <div className={iv.interviewPage}>
+        {proctorToast}
         {/* Top Bar */}
         <div className={iv.topBar}>
           <div className={iv.topLeft}>
@@ -1057,6 +1208,7 @@ export default function Interview() {
               playsInline
               className={iv.videoFeed}
             />
+            <canvas ref={hiddenCanvasRef} style={{ display: 'none' }} />
             <div className={iv.videoNameTag}>
               <span className={`${iv.micIndicator} ${candidateSpeaking && !micMuted ? iv.micActive : ''}`}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg>

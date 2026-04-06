@@ -47,6 +47,7 @@ export const interviewsAPI = {
     triggerAi: (id) => api.patch(`/api/interviews/${id}/trigger-ai`),
     setLive: (id) => api.patch(`/api/interviews/${id}/set-live`),
     getBookedSlots: (date) => api.get(`/api/interviews/booked-slots?date=${date}`),
+    getProctoringLogs: (id) => api.get(`/api/interviews/${id}/proctoring_logs`),
 };
 
 // Questions
@@ -126,6 +127,15 @@ export const usersAPI = {
     updateAdmin: (data) => api.post('/api/users/update_admin', data, {
         headers: { 'Content-Type': 'multipart/form-data' } // Important for sending Form() data
     }),
+    updatePassword: (data) => api.post('/api/users/update_password', data, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    }),
+};
+
+// Settings
+export const settingsAPI = {
+    get: () => api.get('/api/settings'),
+    update: (data) => api.post('/api/settings', data),
 };
 
 // Socket.IO

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 
-export default function VideoRecorder({ onStreamReady, onPermissionDenied, isAdmin }) {
+export default function VideoRecorder({ onStreamReady, onPermissionDenied, isAdmin, onFrameReady }) {
     const [hasPermission, setHasPermission] = useState(false);
     const [isRequesting, setIsRequesting] = useState(false);
     const [error, setError] = useState(null);
@@ -9,6 +9,8 @@ export default function VideoRecorder({ onStreamReady, onPermissionDenied, isAdm
     const mainVideoRef = useRef(null);
     const selfVideoRef = useRef(null);
     const streamRef = useRef(null);
+    const hiddenCanvasRef = useRef(null);
+    const frameIntervalRef = useRef(null);
 
     const requestPermission = useCallback(async () => {
         setIsRequesting(true);
@@ -37,6 +39,37 @@ export default function VideoRecorder({ onStreamReady, onPermissionDenied, isAdm
         setIsRequesting(false);
     }, [onStreamReady, onPermissionDenied]);
 
+    // Capture frame silently from local video and pass to parent
+    const captureAndSendFrame = useCallback(() => {
+        if (!isCamOn || !mainVideoRef.current || !hiddenCanvasRef.current || !onFrameReady) {
+            console.log('[Debug] capture blocked:', { isCamOn, hasVideo: !!mainVideoRef.current, hasCanvas: !!hiddenCanvasRef.current, hasProp: !!onFrameReady });
+            return;
+        }
+        
+        const video = mainVideoRef.current;
+        const canvas = hiddenCanvasRef.current;
+        
+        // Ensure video is playing and has dimensions
+        if (video.videoWidth === 0 || video.videoHeight === 0) {
+            console.log('[Debug] video dimensions 0');
+            return;
+        }
+
+        // Downscale to 320x240 for bandwidth efficiency
+        const targetWidth = 320;
+        const targetHeight = 240;
+        
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, targetWidth, targetHeight);
+        
+        // Compress as JPEG (0.6 quality)
+        const base64Data = canvas.toDataURL('image/jpeg', 0.6);
+        onFrameReady(base64Data);
+    }, [isCamOn, onFrameReady]);
+
     const toggleMic = () => {
         if (streamRef.current) {
             streamRef.current.getAudioTracks().forEach((track) => {
@@ -60,8 +93,36 @@ export default function VideoRecorder({ onStreamReady, onPermissionDenied, isAdm
             streamRef.current.getTracks().forEach((track) => track.stop());
             streamRef.current = null;
         }
+        if (frameIntervalRef.current) {
+            clearInterval(frameIntervalRef.current);
+            frameIntervalRef.current = null;
+        }
         setHasPermission(false);
     };
+
+    // Auto-start capture loop if an onFrameReady handler is provided and camera is on
+    useEffect(() => {
+        if (onFrameReady && isCamOn && hasPermission) {
+            console.log('[Debug] Starting frame capture loop');
+            if (frameIntervalRef.current) clearInterval(frameIntervalRef.current);
+            frameIntervalRef.current = setInterval(() => {
+                captureAndSendFrame();
+            }, 500);
+        } else {
+            console.log('[Debug] Stopping frame capture loop', { onFrameReady: !!onFrameReady, isCamOn, hasPermission });
+            if (frameIntervalRef.current) {
+                clearInterval(frameIntervalRef.current);
+                frameIntervalRef.current = null;
+            }
+        }
+        
+        return () => {
+            if (frameIntervalRef.current) {
+                clearInterval(frameIntervalRef.current);
+                frameIntervalRef.current = null;
+            }
+        };
+    }, [onFrameReady, isCamOn, hasPermission, captureAndSendFrame]);
 
     useEffect(() => {
         return () => {
@@ -208,6 +269,12 @@ export default function VideoRecorder({ onStreamReady, onPermissionDenied, isAdm
                     </div>
                 </div>
             )}
+
+            {/* Hidden canvas for silent frame capture */}
+            <canvas 
+                ref={hiddenCanvasRef} 
+                className="hidden-ai-canvas"
+            />
 
             <style jsx>{`
         .video-recorder {
@@ -465,6 +532,14 @@ export default function VideoRecorder({ onStreamReady, onPermissionDenied, isAdm
 
         .control-btn.end-call:hover {
           background: #DC2626;
+        }
+
+        .hidden-ai-canvas {
+          display: none !important;
+          width: 0 !important;
+          height: 0 !important;
+          position: absolute !important;
+          visibility: hidden !important;
         }
       `}</style>
         </div>
