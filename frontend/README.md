@@ -12,7 +12,7 @@ The system features a modular architecture, with a decoupled AI model-serving mi
 - **🎥 WebRTC Interviews**: High-quality, low-latency video and audio for a seamless interview experience.
 - **📈 Automated Scoring**: Intelligent analysis and scoring of candidate responses using AI.
 - **🛡️ Role-Based Access**: Specialized dashboards for **Administrators** (Interviewer) and **Candidates**.
-- **📊 Admin Control Panel**: Manage jobs, candidates, and review detailed interview reports with proctoring logs.
+- **📊 Admin Control Panel**: Manage jobs, candidates, and review premium, AI-scored interview reports with proctoring logs and direct hiring decisions (Select/Reject).
 - **✉️ Automated Notifications**: Seamless communication via integrated SMTP email services.
 
 ---
@@ -65,7 +65,7 @@ Handles real-time object detection during interviews.
 cd ai-models/model-serving
 pip install -r requirements.txt
 # uvicorn app:app --host 0.0.0.0 --port 8002 --reload
-py -m uvicorn app:app --host 0.0.0.0 --port 8002--reload                   
+py -m uvicorn app:app --host 0.0.0.0 --port 8002 --reload                   
 >> 
 ```
 - **Docs:** `http://localhost:8002/docs`
@@ -134,4 +134,4 @@ The system implements advanced proctoring to ensure interview integrity:
 
 ## 📄 License & Credits
 
-Built by **Akshat** for **Blue Planet Solutions**. All rights reserved.
+Built by **Akshat** for **Blue Planet InfoSolutions**. © 2026 All rights reserved.
