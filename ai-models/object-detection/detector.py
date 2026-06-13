@@ -106,6 +106,17 @@ class ObjectDetector:
             # Run inference restricted to 640px to bound GPU memory usage safely
             results = self._model.predict(source=img, conf=self.confidence_threshold, imgsz=640, verbose=False)
             
+            # OpenCV Real-Time Visualization of Bounding Boxes
+            import cv2
+            
+            # r.plot() draws bounding boxes, labels, and confidence scores
+            # It returns an RGB numpy array (since source was RGB)
+            annotated_frame = results[0].plot() 
+            annotated_bgr = cv2.cvtColor(annotated_frame, cv2.COLOR_RGB2BGR)
+            
+            cv2.imshow("YOLOv8 AI Proctoring Window", annotated_bgr)
+            cv2.waitKey(1) # Updates the OpenCV window
+            
             detections = []
             flags = []
             face_count = 0
